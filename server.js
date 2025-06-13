@@ -111,14 +111,8 @@ app.use((req, res, next) => {
 const connectDB = async () => {
   try {
     const mongoURI = process.env.MONGODB_URI;
-    console.log('Connecting to MongoDB...');
-    
-    await mongoose.connect(mongoURI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    
-    console.log('✅ Connected to MongoDB');
+    await mongoose.connect(mongoURI);
+
   } catch (error) {
     console.error('❌ MongoDB connection error:', error);
     process.exit(1);
@@ -145,7 +139,6 @@ app.get('/api/health', (req, res) => {
 
 // 404 handler
 app.use('*', (req, res) => {
-  console.log('404 - Route not found:', req.originalUrl);
   res.status(404).json({
     success: false,
     message: 'Route not found'
@@ -159,15 +152,6 @@ app.use((error, req, res, next) => {
     success: false,
     message: process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message
   });
-});
-
-app.listen(PORT, () => {
-  console.log(`🚀 Artistic Manifestation server running on port ${PORT}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔑 Google OAuth: ${process.env.GOOGLE_CLIENT_ID ? 'Configured' : 'Not configured'}`);
-  console.log(`☁️ Cloudinary: ${process.env.CLOUDINARY_CLOUD_NAME ? 'Configured' : 'Not configured'}`);
-  console.log(`💳 Razorpay: ${process.env.RAZORPAY_KEY_ID ? 'Configured' : 'Not configured'}`);
-  console.log(`🗄️ MongoDB: ${process.env.MONGODB_URI ? 'Custom URI' : 'Default local'}`);
 });
 
 export const ADMIN_EMAILS = process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(',').map(email => email.trim()) : [];
