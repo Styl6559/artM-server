@@ -69,14 +69,14 @@ const contactLimiter = rateLimit({
 // CORS configuration
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
     const allowedOrigins = [
-      process.env.FRONTEND_URL
+      'https://luminous-frangollo-7f03a9.netlify.app'
     ];
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
+
+    // Allow requests with no origin (like curl or server-side)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.log('CORS blocked origin:', origin);
@@ -85,9 +85,10 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   exposedHeaders: ['Set-Cookie']
 };
+
 
 app.use(cors(corsOptions));
 
