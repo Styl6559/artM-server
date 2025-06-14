@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import { ADMIN_EMAILS } from '../server.js';
+
 export const authenticateToken = async (req, res, next) => {
   try {
     // Get token from HTTP-only cookie
@@ -17,6 +18,8 @@ export const authenticateToken = async (req, res, next) => {
     const user = await User.findById(decoded.userId).select('-password');
     
     if (!user) {
+      // Clear invalid cookie
+      res.clearCookie('authToken');
       return res.status(401).json({ 
         success: false, 
         message: 'User not found' 
@@ -34,6 +37,9 @@ export const authenticateToken = async (req, res, next) => {
     next();
   } catch (error) {
     console.error('Auth middleware error:', error);
+    
+    // Clear invalid cookie on any error
+    res.clearCookie('authToken');
     
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({ 
