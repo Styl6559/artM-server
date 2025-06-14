@@ -588,7 +588,11 @@ router.put('/change-password', authenticateToken, validatePasswordChange, async 
 // Logout (clear cookie)
 router.post('/logout', (req, res) => {
   try {
-    res.clearCookie('authToken');
+    res.clearCookie('authToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'none'
+    });
     res.json({
       success: true,
       message: 'Logged out successfully'
