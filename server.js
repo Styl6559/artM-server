@@ -38,7 +38,7 @@ app.use(helmet({
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 5 * 60 * 1000,
-  max: process.env.NODE_ENV === 'production' ? 150 : 10000, // More lenient in development
+  max: process.env.NODE_ENV === 'production' ? 120 : 10000, // More lenient in development
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again later.'
@@ -129,13 +129,8 @@ app.use('/api/products', productRoutes);
 app.use('/api/contact', contactLimiter, contactRoutes);
 app.use('/api/payment', paymentRoutes);
 // Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Artistic Manifestation server is running',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
-  });
+app.get('/api/health', (_req, res) => {
+  res.sendStatus(200);
 });
 
 // 404 handler
