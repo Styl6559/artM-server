@@ -73,7 +73,7 @@ const corsOptions = {
     if (!origin) return callback(null, true);
     
     const allowedOrigins = [
-      process.env.FRONTEND_URL,process.env.FRONTEND_URL2
+      process.env.FRONTEND_URL,process.env.FRONTEND_URL2,process.env.FRONTEND_URL3
     ];
     
     if (allowedOrigins.indexOf(origin) !== -1) {
@@ -130,7 +130,11 @@ app.use('/api/contact', contactLimiter, contactRoutes);
 app.use('/api/payment', paymentRoutes);
 // Health check endpoint
 app.get('/api/health', (_req, res) => {
-  res.sendStatus(200);
+  res.status(200).json({
+    success: true,
+    status: 'OK',
+    timestamp: new Date().toISOString()
+  });
 });
 
 // 404 handler
