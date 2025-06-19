@@ -129,12 +129,8 @@ app.use('/api/products', productRoutes);
 app.use('/api/contact', contactLimiter, contactRoutes);
 app.use('/api/payment', paymentRoutes);
 // Health check endpoint
-app.get('/api/health', (_req, res) => {
-  res.status(200).json({
-    success: true,
-    status: 'OK',
-    timestamp: new Date().toISOString()
-  });
+app.get('/api/health', (req, res) => {
+  res.sendStatus(200);
 });
 
 // 404 handler
