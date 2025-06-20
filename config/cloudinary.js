@@ -34,7 +34,7 @@ testCloudinaryConnection();
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'artistic-manifestation',
+    folder: 'rangleela',
     allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
     transformation: [
       { width: 800, height: 800, crop: 'limit', quality: 'auto' }
