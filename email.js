@@ -26,11 +26,11 @@ export const sendVerificationEmail = async (email, code, name) => {
     <body>
       <div class="container">
         <div class="header">
-          <h1>🎨 Artistic Manifestation</h1>
+          <h1>🎨 RangLeela</h1>
         </div>
         <div class="content">
           <h2>Welcome, ${name}!</h2>
-          <p>Thank you for signing up with Artistic Manifestation. To complete your registration and secure your account, please verify your email address using the code below:</p>
+          <p>Thank you for signing up with RangLeela. To complete your registration and secure your account, please verify your email address using the code below:</p>
           
           <div class="verification-code">
             <p style="margin: 0 0 10px 0; color: #64748b; font-weight: 600;">Your Verification Code</p>
@@ -41,7 +41,7 @@ export const sendVerificationEmail = async (email, code, name) => {
           <p>If you didn't create an account with us, please ignore this email.</p>
         </div>
         <div class="footer">
-          <p>© 2024 Artistic Manifestation. All rights reserved.</p>
+          <p>© 2024 RangLeela. All rights reserved.</p>
           <p>This is an automated message, please do not reply.</p>
         </div>
       </div>
@@ -51,9 +51,9 @@ export const sendVerificationEmail = async (email, code, name) => {
 
   try {
     const { data, error } = await resend.emails.send({
-      from: `Artistic Manifestation <${process.env.RESEND_SENDER_EMAIL}>`,
+      from: `RangLeela <${process.env.RESEND_SENDER_EMAIL}>`,
       to: email,
-      subject: 'Verify Your Account - Artistic Manifestation',
+      subject: 'Verify Your Account - RangLeela',
       html,
     });
 
@@ -76,7 +76,7 @@ export const sendWelcomeEmail = async (email, name) => {
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Welcome to Artistic Manifestation</title>
+      <title>Welcome to RangLeela</title>
       <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #f8fafc; }
         .container { max-width: 600px; margin: 0 auto; background-color: white; }
@@ -90,18 +90,18 @@ export const sendWelcomeEmail = async (email, name) => {
     <body>
       <div class="container">
         <div class="header">
-          <h1>🎉 Welcome to Artistic Manifestation!</h1>
+          <h1>🎉 Welcome to RangLeela!</h1>
         </div>
         <div class="content">
           <h2>Congratulations, ${name}!</h2>
           <div style="text-align: center;">
             <div class="welcome-badge">✅ Account Verified Successfully</div>
           </div>
-          <p>Your account has been successfully verified and you're now part of the Artistic Manifestation community!</p>
+          <p>Your account has been successfully verified and you're now part of the RangLeela community!</p>
         </div>
         <div class="footer">
-          <p>© 2024 Artistic Manifestation. All rights reserved.</p>
-          <p>Thank you for choosing Artistic Manifestation for your art needs.</p>
+          <p>© 2024 RangLeela. All rights reserved.</p>
+          <p>Thank you for choosing RangLeela for your art needs.</p>
         </div>
       </div>
     </body>
@@ -110,9 +110,9 @@ export const sendWelcomeEmail = async (email, name) => {
 
   try {
     const { data, error } = await resend.emails.send({
-      from: `Artistic Manifestation <${process.env.RESEND_SENDER_EMAIL}>`,
+      from: `RangLeela <${process.env.RESEND_SENDER_EMAIL}>`,
       to: email,
-      subject: 'Welcome to Artistic Manifestation! 🎉',
+      subject: 'Welcome to RangLeela! 🎉',
       html,
     });
 
@@ -205,8 +205,8 @@ export const sendOrderConfirmationEmail = async (email, name, order) => {
           <p>We'll send you another email when your order ships. You can track your order status in your account dashboard.</p>
         </div>
         <div class="footer">
-          <p>© 2024 Artistic Manifestation. All rights reserved.</p>
-          <p>Thank you for supporting artists and choosing Artistic Manifestation!</p>
+          <p>© 2024 RangLeela. All rights reserved.</p>
+          <p>Thank you for supporting artists and choosing RangLeela!</p>
         </div>
       </div>
     </body>
@@ -215,9 +215,9 @@ export const sendOrderConfirmationEmail = async (email, name, order) => {
 
   try {
     const { data, error } = await resend.emails.send({
-      from: `Artistic Manifestation <${process.env.RESEND_SENDER_EMAIL}>`,
+      from: `RangLeela <${process.env.RESEND_SENDER_EMAIL}>`,
       to: email,
-      subject: `Thank you for your purchase! - Order #${order._id.toString().slice(-8).toUpperCase()}`,
+      subject: `Thanks for your purchase! - Order #${order._id.toString().slice(-8).toUpperCase()}`,
       html,
     });
 
@@ -274,10 +274,10 @@ export const sendDeliveryEmail = async (email, name, order) => {
 
           <p>If you have any questions about your order or need assistance, our customer support team is here to help.</p>
           
-          <p>Thank you for supporting independent artists and choosing Artistic Manifestation for your art needs!</p>
+          <p>Thank you for supporting independent artists and choosing RangLeela for your art needs!</p>
         </div>
         <div class="footer">
-          <p>© 2024 Artistic Manifestation. All rights reserved.</p>
+          <p>© 2024 RangLeela. All rights reserved.</p>
           <p>Keep creating, keep inspiring! 🎨</p>
         </div>
       </div>
@@ -287,7 +287,7 @@ export const sendDeliveryEmail = async (email, name, order) => {
 
   try {
     const { data, error } = await resend.emails.send({
-      from: `Artistic Manifestation <${process.env.RESEND_SENDER_EMAIL}>`,
+      from: `RangLeela <${process.env.RESEND_SENDER_EMAIL}>`,
       to: email,
       subject: `Your Order Has Been Delivered! - #${order._id.toString().slice(-8).toUpperCase()}`,
       html,
