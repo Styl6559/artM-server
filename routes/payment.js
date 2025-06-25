@@ -22,13 +22,27 @@ router.use(authenticateToken);
 router.post('/create-order', [
   body('items').isArray().withMessage('Items must be an array'),
   body('shippingAddress').isObject().withMessage('Shipping address is required'),
-  body('shippingAddress.name').trim().isLength({ min: 2 }).withMessage('Name is required'),
-  body('shippingAddress.email').isEmail().withMessage('Valid email is required'),
-  body('shippingAddress.phone').trim().isLength({ min: 10 }).withMessage('Valid phone number is required'),
-  body('shippingAddress.address').trim().isLength({ min: 10 }).withMessage('Address is required'),
-  body('shippingAddress.city').trim().isLength({ min: 2 }).withMessage('City is required'),
-  body('shippingAddress.state').trim().isLength({ min: 2 }).withMessage('State is required'),
-  body('shippingAddress.pincode').trim().isLength({ min: 6 }).withMessage('Valid pincode is required')
+  body('shippingAddress.name')
+    .trim()
+    .isLength({ min: 2, max: 30 }).withMessage('Name must be 2-30 characters'),
+  body('shippingAddress.email')
+    .isEmail().withMessage('Valid email is required')
+    .isLength({ max: 50 }).withMessage('Email must be at most 50 characters'),
+  body('shippingAddress.phone')
+    .trim()
+    .isLength({ min: 10, max: 15 }).withMessage('Phone must be 10-15 digits'),
+  body('shippingAddress.address')
+    .trim()
+    .isLength({ min: 10, max: 100 }).withMessage('Address must be 10-100 characters'),
+  body('shippingAddress.city')
+    .trim()
+    .isLength({ min: 2, max: 50 }).withMessage('City must be 2-50 characters'),
+  body('shippingAddress.state')
+    .trim()
+    .isLength({ min: 2, max: 50 }).withMessage('State must be 2-50 characters'),
+  body('shippingAddress.pincode')
+    .trim()
+    .isLength({ min: 6, max: 10 }).withMessage('Pincode must be 6-10 digits')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -46,7 +60,13 @@ router.post('/create-order', [
     let totalAmount = 0;
     const orderItems = [];
 
+    if (items.length > 20) {
+      return res.status(400).json({ success: false, message: 'Too many items in order' });
+    }
     for (const item of items) {
+      if (item.quantity > 10) {
+        return res.status(400).json({ success: false, message: 'Quantity too high for item' });
+      }
       const product = await Product.findById(item.productId);
       if (!product) {
         return res.status(400).json({
