@@ -13,13 +13,13 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 // Validation middleware
 const validateSignup = [
   body('email').isEmail().normalizeEmail().withMessage('Valid email required'),
-  body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
-  body('name').trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters')
+  body('password').isLength({ min: 8, max: 32 }).withMessage('Password must be 8-32 characters'),
+  body('name').trim().isLength({ min: 2, max: 50 }).withMessage('Name must be 2-50 characters')
 ];
 
 const validateLogin = [
   body('email').isEmail().normalizeEmail().withMessage('Valid email required'),
-  body('password').notEmpty().withMessage('Password required')
+  body('password').isLength({ min: 8, max: 32 }).withMessage('Password must be 8-32 characters')
 ];
 
 const validateVerification = [
@@ -28,12 +28,12 @@ const validateVerification = [
 ];
 
 const validateProfileUpdate = [
-  body('name').trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
+  body('name').trim().isLength({ min: 2, max: 50 }).withMessage('Name must be 2-50 characters'),
   body('avatar').optional().isURL().withMessage('Avatar must be a valid URL')
 ];
 
 const validatePasswordChange = [
-  body('newPassword').isLength({ min: 8 }).withMessage('New password must be at least 8 characters')
+  body('newPassword').isLength({ min: 8, max: 32 }).withMessage('New password must be 8-32 characters')
 ];
 
 // Helper function to generate JWT
