@@ -26,12 +26,7 @@ const productSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: ['painting', 'apparel']
-  },
-  artist: {
-    type: String,
-    required: true,
-    trim: true
+    enum: ['painting', 'apparel', 'accessories']
   },
   size: {
     type: String,
@@ -76,7 +71,6 @@ const productSchema = new mongoose.Schema({
 productSchema.index({ 
   name: 'text', 
   description: 'text', 
-  artist: 'text'
 });
 
 // Index for category and featured products

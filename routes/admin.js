@@ -240,7 +240,6 @@ router.post('/products',
     body('description').trim().isLength({ min: 10 }).withMessage('Description must be at least 10 characters'),
     body('price').isFloat({ min: 0 }).withMessage('Price must be a positive number'),
     body('category').isIn(['painting', 'apparel']).withMessage('Invalid category'),
-    body('artist').trim().isLength({ min: 2 }).withMessage('Artist name required')
   ],
   async (req, res) => {
     try {
@@ -265,14 +264,13 @@ router.post('/products',
         });
       }
 
-      const { name, description, price, category, artist, size, material, featured, inStock } = req.body;
+      const { name, description, price, category, size, material, featured, inStock } = req.body;
 
       const product = new Product({
         name,
         description,
         price: parseFloat(price),
         category,
-        artist,
         size: size || '',
         material: material || '',
         image: req.file.path,
