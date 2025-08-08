@@ -1,8 +1,71 @@
+
 import { Resend } from 'resend';
 import dotenv from 'dotenv';
 dotenv.config();
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+export const sendContactReply = async ({ to, name, subject, reply }) => {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Response from RangLeela Support</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #f8fafc; }
+        .container { max-width: 600px; margin: 0 auto; background-color: white; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; text-align: center; }
+        .header h1 { color: white; margin: 0; font-size: 28px; font-weight: 600; }
+        .content { padding: 40px 20px; }
+        .reply-box { background-color: #f1f5f9; border-left: 4px solid #764ba2; padding: 20px; margin: 20px 0; }
+        .footer { background-color: #f8fafc; padding: 20px; text-align: center; color: #64748b; font-size: 14px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>🎨 RangLeela Support</h1>
+        </div>
+        <div class="content">
+          <h2>Dear ${name},</h2>
+          <p>Thank you for contacting RangLeela Support. Here is our response to your inquiry regarding "${subject}":</p>
+          
+          <div class="reply-box">
+            ${reply}
+          </div>
+          
+          <p>If you have any further questions, please contact us at rangleela0506@gmail.com</p>
+          <p>Best regards,<br>RangLeela Support Team</p>
+        </div>
+        <div class="footer">
+          <p>© ${new Date().getFullYear()} RangLeela. All rights reserved.</p>
+          <p style="color: #64748b; font-size: 12px;">This is an automated email. Please do not reply to this message.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: `RangLeela Support <${process.env.RESEND_SENDER_EMAIL}>`,
+      to,
+      subject: `Re: ${subject} - RangLeela Support`,
+      html,
+    });
+
+    if (error) {
+      console.error('Resend error:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (err) {
+    console.error('Unexpected error sending email:', err);
+    return { success: false, error: err.message };
+  }
+};
 
 export const sendVerificationEmail = async (email, code, name) => {
   const html = `
@@ -39,10 +102,11 @@ export const sendVerificationEmail = async (email, code, name) => {
           </div>
           
           <p>If you didn't create an account with us, please ignore this email.</p>
+          <p>For any assistance, please contact us at rangleela0506@gmail.com</p>
         </div>
         <div class="footer">
-          <p>© 2024 RangLeela. All rights reserved.</p>
-          <p>This is an automated message, please do not reply.</p>
+          <p>© ${new Date().getFullYear()} RangLeela. All rights reserved.</p>
+          <p style="color: #64748b; font-size: 12px;">This is an automated email. Please do not reply to this message.</p>
         </div>
       </div>
     </body>
@@ -98,10 +162,12 @@ export const sendWelcomeEmail = async (email, name) => {
             <div class="welcome-badge">✅ Account Verified Successfully</div>
           </div>
           <p>Your account has been successfully verified and you're now part of the RangLeela community!</p>
+          <p>If you need any assistance, please contact us at rangleela0506@gmail.com</p>
         </div>
         <div class="footer">
-          <p>© 2024 RangLeela. All rights reserved.</p>
+          <p>© ${new Date().getFullYear()} RangLeela. All rights reserved.</p>
           <p>Thank you for choosing RangLeela for your art needs.</p>
+          <p style="color: #64748b; font-size: 12px;">This is an automated email. Please do not reply to this message.</p>
         </div>
       </div>
     </body>
@@ -203,10 +269,12 @@ export const sendOrderConfirmationEmail = async (email, name, order) => {
           </div>
 
           <p>We'll send you another email when your order ships. You can track your order status in your account dashboard.</p>
+          <p>For any queries about your order, please contact us at rangleela0506@gmail.com</p>
         </div>
         <div class="footer">
-          <p>© 2024 RangLeela. All rights reserved.</p>
+          <p>© ${new Date().getFullYear()} RangLeela. All rights reserved.</p>
           <p>Thank you for supporting artists and choosing RangLeela!</p>
+          <p style="color: #64748b; font-size: 12px;">This is an automated email. Please do not reply to this message.</p>
         </div>
       </div>
     </body>

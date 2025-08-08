@@ -20,6 +20,7 @@ const contactSchema = new mongoose.Schema({
       'order',
       'shipping',
       'return',
+      'custom',
       'artist',
       'wholesale',
       'press',
@@ -30,6 +31,20 @@ const contactSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  images: [{
+    url: {
+      type: String,
+      required: true
+    },
+    cloudinaryId: {
+      type: String,
+      required: true
+    },
+    filename: {
+      type: String,
+      required: true
+    }
+  }],
   status: {
     type: String,
     enum: ['new', 'read', 'replied', 'resolved'],
