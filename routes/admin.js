@@ -18,8 +18,6 @@ router.use(requireAdmin);
 // Get dashboard analytics
 router.get('/analytics', async (req, res) => {
   try {
-    console.log('Fetching analytics for admin:', req.user.email);
-    
     const [
       totalProducts,
       totalUsers,
@@ -118,15 +116,6 @@ router.post('/contacts/:id/reply',
       { $sort: { '_id.year': -1, '_id.month': -1 } },
       { $limit: 6 }
     ]);
-
-    console.log('Analytics data:', {
-      totalProducts,
-      totalUsers,
-      totalContacts,
-      newContacts,
-      totalOrders,
-      pendingOrders
-    });
 
     res.json({
       success: true,
@@ -241,9 +230,7 @@ router.put('/orders/:id', async (req, res) => {
 
 // Get all products
 router.get('/products', async (req, res) => {
-  try {
-    console.log('Fetching products for admin');
-    
+  try {    
     const { page = 1, limit = 50, category, search } = req.query;
     const query = {};
 
@@ -264,8 +251,6 @@ router.get('/products', async (req, res) => {
       ...product.toObject(),
       id: product._id.toString()
     }));
-
-    console.log(`Found ${transformedProducts.length} products`);
 
     res.json({
       success: true,
@@ -302,13 +287,8 @@ router.post('/products',
   ],
   async (req, res) => {
     try {
-      console.log('Creating product - User:', req.user.email);
-      console.log('Request body:', req.body);
-      console.log('File:', req.file);
-
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        console.log('Validation errors:', errors.array());
         return res.status(400).json({
           success: false,
           message: 'Validation failed',
@@ -348,8 +328,6 @@ router.post('/products',
       });
 
       await product.save();
-      console.log('Product created successfully:', product._id);
-
       // Transform product to include proper ID
       const transformedProduct = {
         ...product.toObject(),
@@ -385,9 +363,7 @@ router.post('/products',
 router.put('/products/:id',
   upload.single('image'),
   async (req, res) => {
-    try {
-      console.log('Updating product:', req.params.id);
-      
+    try {      
       const { id } = req.params;
       const updateData = { ...req.body };
 
@@ -445,8 +421,6 @@ router.put('/products/:id',
         id: product._id.toString()
       };
 
-      console.log('Product updated successfully');
-
       res.json({
         success: true,
         message: 'Product updated successfully',
@@ -465,8 +439,6 @@ router.put('/products/:id',
 // Delete product
 router.delete('/products/:id', async (req, res) => {
   try {
-    console.log('Deleting product:', req.params.id);
-    
     const { id } = req.params;
     const product = await Product.findById(id);
 
@@ -483,7 +455,6 @@ router.delete('/products/:id', async (req, res) => {
     }
 
     await Product.findByIdAndDelete(id);
-    console.log('Product deleted successfully');
 
     res.json({
       success: true,

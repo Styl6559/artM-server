@@ -12,6 +12,7 @@ import adminRoutes from './routes/admin.js';
 import productRoutes from './routes/products.js';
 import contactRoutes from './routes/contact.js';
 import paymentRoutes from './routes/payment.js';
+import heroImagesRoutes from './routes/heroImages.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -100,10 +101,6 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Request logging middleware
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-  if (req.method === 'POST' || req.method === 'PUT') {
-    console.log('Body keys:', Object.keys(req.body));
-  }
   next();
 });
 
@@ -128,6 +125,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/contact', contactLimiter, contactRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/hero-images', heroImagesRoutes);
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.sendStatus(200);
