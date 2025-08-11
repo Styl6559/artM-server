@@ -18,9 +18,13 @@ router.use(requireAdmin);
 // Get dashboard analytics
 router.get('/analytics', async (req, res) => {
   try {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
     const [
       totalProducts,
       totalUsers,
+      monthlyUsers,
       totalContacts,
       newContacts,
       totalOrders,
@@ -31,6 +35,7 @@ router.get('/analytics', async (req, res) => {
     ] = await Promise.all([
       Product.countDocuments(),
       User.countDocuments(),
+      User.countDocuments({ createdAt: { $gte: thirtyDaysAgo } }),
       Contact.countDocuments(),
       Contact.countDocuments({ status: 'new' }),
       Order.countDocuments(),
@@ -123,6 +128,7 @@ router.post('/contacts/:id/reply',
         overview: {
           totalProducts,
           totalUsers,
+          monthlyUsers,
           totalContacts,
           newContacts,
           totalOrders,
