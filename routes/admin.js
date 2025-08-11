@@ -564,4 +564,22 @@ router.put('/contacts/:id', async (req, res) => {
   }
 });
 
+// Get all users for analytics
+router.get('/users', async (req, res) => {
+  try {
+    const users = await User.find({}, '_id name email createdAt').sort({ createdAt: -1 });
+    
+    res.json({
+      success: true,
+      data: users
+    });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch users'
+    });
+  }
+});
+
 export default router;
