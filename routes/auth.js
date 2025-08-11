@@ -46,7 +46,7 @@ const setTokenCookie = (res, token) => {
   res.cookie('authToken', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax', // Better security than 'none', works for most cross-origin cases
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
   });
 };
@@ -591,7 +591,7 @@ router.post('/logout', (req, res) => {
     res.clearCookie('authToken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
+      sameSite: 'lax' // Must match the original cookie setting
     });
     res.json({
       success: true,
