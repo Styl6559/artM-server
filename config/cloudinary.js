@@ -51,7 +51,8 @@ const storage = new CloudinaryStorage({
 export const upload = multer({ 
   storage: storage,
   limits: {
-    fileSize: 2 * 1024 * 1024 
+    fileSize: 15 * 1024 * 1024, // 15MB limit
+    files: 3 // Allow maximum 3 files per upload
   },
   fileFilter: (req, file, cb) => {
     console.log('File upload attempt:', {
@@ -61,12 +62,45 @@ export const upload = multer({
       size: file.size
     });
     
-    // Check file type
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed!'), false);
+    // Allowed MIME types and extensions
+    const allowedMimes = [
+      'image/jpeg',
+      'image/jpg', 
+      'image/png',
+      'image/webp'
+    ];
+    
+    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
+    
+    // Check MIME type
+    if (!allowedMimes.includes(file.mimetype)) {
+      return cb(new Error('Invalid file type. Only JPEG, PNG, and WebP images are allowed.'), false);
     }
+    
+    // Check file extension
+    const fileExtension = file.originalname.toLowerCase().slice(file.originalname.lastIndexOf('.'));
+    if (!allowedExtensions.includes(fileExtension)) {
+      return cb(new Error('Invalid file extension. Only .jpg, .jpeg, .png, and .webp files are allowed.'), false);
+    }
+    
+    // Check for suspicious file names
+    const suspiciousPatterns = [
+      /\.php$/i, /\.exe$/i, /\.bat$/i, /\.cmd$/i, /\.scr$/i, /\.com$/i,
+      /\.pif$/i, /\.vbs$/i, /\.js$/i, /\.jar$/i, /\.zip$/i, /\.rar$/i
+    ];
+    
+    for (const pattern of suspiciousPatterns) {
+      if (pattern.test(file.originalname)) {
+        return cb(new Error('Suspicious file name detected.'), false);
+      }
+    }
+    
+    // Check file size (additional check)
+    if (file.size && file.size > 15 * 1024 * 1024) {
+      return cb(new Error('File too large. Maximum size is 15MB.'), false);
+    }
+    
+    cb(null, true);
   }
 });
 

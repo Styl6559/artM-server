@@ -7,7 +7,7 @@ import Order from '../models/Order.js';
 import { authenticateToken, requireAdmin } from '../middleware/auth.js';
 import { upload } from '../config/cloudinary.js';
 import cloudinary from '../config/cloudinary.js';
-import { sendDeliveryEmail } from '../email.js';
+import { sendDeliveryEmail, sendContactReply } from '../email.js';
 
 const router = express.Router();
 
@@ -18,11 +18,13 @@ router.use(requireAdmin);
 // Get dashboard analytics
 router.get('/analytics', async (req, res) => {
   try {
-    console.log('Fetching analytics for admin:', req.user.email);
-    
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
     const [
       totalProducts,
       totalUsers,
+      monthlyUsers,
       totalContacts,
       newContacts,
       totalOrders,
@@ -33,6 +35,7 @@ router.get('/analytics', async (req, res) => {
     ] = await Promise.all([
       Product.countDocuments(),
       User.countDocuments(),
+      User.countDocuments({ createdAt: { $gte: thirtyDaysAgo } }),
       Contact.countDocuments(),
       Contact.countDocuments({ status: 'new' }),
       Order.countDocuments(),
@@ -47,6 +50,62 @@ router.get('/analytics', async (req, res) => {
     const contactsBySubject = await Contact.aggregate([
       { $group: { _id: '$subject', count: { $sum: 1 } } }
     ]);
+
+// Reply to contact endpoint
+router.post('/contacts/:id/reply', 
+  [
+    body('reply').trim().isLength({ min: 1, max: 5000 }).withMessage('Reply must be between 1-5000 characters'),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation failed',
+          errors: errors.array()
+        });
+      }
+
+      const { id } = req.params;
+      const { reply } = req.body;
+
+    // Get contact details
+    const contact = await Contact.findById(id);
+    if (!contact) {
+      return res.status(404).json({
+        success: false,
+        message: 'Contact not found'
+      });
+    }
+
+    // Send reply email
+    const emailResult = await sendContactReply({
+      to: contact.email,
+      name: contact.name,
+      subject: contact.subject,
+      reply: reply
+    });
+
+    if (!emailResult.success) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send reply email'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Reply sent successfully'
+    });
+  } catch (error) {
+    console.error('Send reply error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send reply'
+    });
+  }
+});
 
     const monthlyOrders = await Order.aggregate([
       {
@@ -63,21 +122,13 @@ router.get('/analytics', async (req, res) => {
       { $limit: 6 }
     ]);
 
-    console.log('Analytics data:', {
-      totalProducts,
-      totalUsers,
-      totalContacts,
-      newContacts,
-      totalOrders,
-      pendingOrders
-    });
-
     res.json({
       success: true,
       data: {
         overview: {
           totalProducts,
           totalUsers,
+          monthlyUsers,
           totalContacts,
           newContacts,
           totalOrders,
@@ -185,9 +236,7 @@ router.put('/orders/:id', async (req, res) => {
 
 // Get all products
 router.get('/products', async (req, res) => {
-  try {
-    console.log('Fetching products for admin');
-    
+  try {    
     const { page = 1, limit = 50, category, search } = req.query;
     const query = {};
 
@@ -208,8 +257,6 @@ router.get('/products', async (req, res) => {
       ...product.toObject(),
       id: product._id.toString()
     }));
-
-    console.log(`Found ${transformedProducts.length} products`);
 
     res.json({
       success: true,
@@ -236,21 +283,18 @@ router.get('/products', async (req, res) => {
 router.post('/products', 
   upload.single('image'),
   [
-    body('name').trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
-    body('description').trim().isLength({ min: 10 }).withMessage('Description must be at least 10 characters'),
+    body('name').trim().isLength({ min: 1, max: 100 }).withMessage('Name must be between 1-100 characters'),
+    body('description').trim().isLength({ min: 1, max: 2000 }).withMessage('Description must be between 1-2000 characters'),
     body('price').isFloat({ min: 0 }).withMessage('Price must be a positive number'),
-    body('category').isIn(['painting', 'apparel']).withMessage('Invalid category'),
-    body('artist').trim().isLength({ min: 2 }).withMessage('Artist name required')
+    body('discountPrice').optional().isFloat({ min: 0 }).withMessage('Discount price must be a positive number'),
+    body('category').isIn(['painting', 'apparel', 'accessories']).withMessage('Invalid category'),
+    body('size').optional().trim().isLength({ max: 50 }).withMessage('Size must be less than 50 characters'),
+    body('material').optional().trim().isLength({ max: 100 }).withMessage('Material must be less than 100 characters'),
   ],
   async (req, res) => {
     try {
-      console.log('Creating product - User:', req.user.email);
-      console.log('Request body:', req.body);
-      console.log('File:', req.file);
-
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        console.log('Validation errors:', errors.array());
         return res.status(400).json({
           success: false,
           message: 'Validation failed',
@@ -265,14 +309,22 @@ router.post('/products',
         });
       }
 
-      const { name, description, price, category, artist, size, material, featured, inStock } = req.body;
+      const { name, description, price, discountPrice, category, size, material, featured, inStock } = req.body;
+
+      // Additional validation for discount price
+      if (discountPrice && parseFloat(discountPrice) >= parseFloat(price)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Discount price must be less than regular price'
+        });
+      }
 
       const product = new Product({
         name,
         description,
         price: parseFloat(price),
+        discountPrice: discountPrice ? parseFloat(discountPrice) : undefined,
         category,
-        artist,
         size: size || '',
         material: material || '',
         image: req.file.path,
@@ -282,8 +334,6 @@ router.post('/products',
       });
 
       await product.save();
-      console.log('Product created successfully:', product._id);
-
       // Transform product to include proper ID
       const transformedProduct = {
         ...product.toObject(),
@@ -319,9 +369,7 @@ router.post('/products',
 router.put('/products/:id',
   upload.single('image'),
   async (req, res) => {
-    try {
-      console.log('Updating product:', req.params.id);
-      
+    try {      
       const { id } = req.params;
       const updateData = { ...req.body };
 
@@ -331,6 +379,24 @@ router.put('/products/:id',
       }
       if (updateData.inStock !== undefined) {
         updateData.inStock = updateData.inStock === 'true';
+      }
+
+      // Handle discount price validation
+      if (updateData.discountPrice && updateData.price) {
+        if (parseFloat(updateData.discountPrice) >= parseFloat(updateData.price)) {
+          return res.status(400).json({
+            success: false,
+            message: 'Discount price must be less than regular price'
+          });
+        }
+      }
+
+      // Convert price fields to numbers
+      if (updateData.price) {
+        updateData.price = parseFloat(updateData.price);
+      }
+      if (updateData.discountPrice) {
+        updateData.discountPrice = parseFloat(updateData.discountPrice);
       }
 
       if (req.file) {
@@ -361,8 +427,6 @@ router.put('/products/:id',
         id: product._id.toString()
       };
 
-      console.log('Product updated successfully');
-
       res.json({
         success: true,
         message: 'Product updated successfully',
@@ -381,8 +445,6 @@ router.put('/products/:id',
 // Delete product
 router.delete('/products/:id', async (req, res) => {
   try {
-    console.log('Deleting product:', req.params.id);
-    
     const { id } = req.params;
     const product = await Product.findById(id);
 
@@ -399,7 +461,6 @@ router.delete('/products/:id', async (req, res) => {
     }
 
     await Product.findByIdAndDelete(id);
-    console.log('Product deleted successfully');
 
     res.json({
       success: true,
@@ -499,6 +560,24 @@ router.put('/contacts/:id', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to update contact'
+    });
+  }
+});
+
+// Get all users for analytics
+router.get('/users', async (req, res) => {
+  try {
+    const users = await User.find({}, '_id name email createdAt').sort({ createdAt: -1 });
+    
+    res.json({
+      success: true,
+      data: users
+    });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch users'
     });
   }
 });
