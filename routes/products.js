@@ -13,6 +13,7 @@ router.get('/', async (req, res) => {
       search, 
       minPrice, 
       maxPrice, 
+      artist,
       featured,
       sort = 'createdAt'
     } = req.query;
@@ -34,6 +35,11 @@ router.get('/', async (req, res) => {
       query.price = {};
       if (minPrice) query.price.$gte = parseFloat(minPrice);
       if (maxPrice) query.price.$lte = parseFloat(maxPrice);
+    }
+
+    // Artist filter
+    if (artist) {
+      query.artist = new RegExp(artist, 'i');
     }
 
     // Featured filter

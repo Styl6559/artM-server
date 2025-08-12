@@ -30,7 +30,7 @@ router.post('/create-order', [
     .isLength({ max: 50 }).withMessage('Email must be at most 50 characters'),
   body('shippingAddress.phone')
     .trim()
-    .matches(/^\d{10}$/).withMessage('Phone number must be 10 digits'),
+    .isLength({ min: 10, max: 15 }).withMessage('Phone must be 10-15 digits'),
   body('shippingAddress.address')
     .trim()
     .isLength({ min: 10, max: 100 }).withMessage('Address must be 10-100 characters'),
@@ -42,7 +42,7 @@ router.post('/create-order', [
     .isLength({ min: 2, max: 50 }).withMessage('State must be 2-50 characters'),
   body('shippingAddress.pincode')
     .trim()
-    .matches(/^\d{6}$/).withMessage('Pincode must be 6 digits')
+    .isLength({ min: 6, max: 10 }).withMessage('Pincode must be 6-10 digits')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -82,19 +82,13 @@ router.post('/create-order', [
         });
       }
 
-      // Use discount price if available and valid, otherwise use regular price
-      const effectivePrice = product.discountPrice && product.discountPrice < product.price 
-        ? product.discountPrice 
-        : product.price;
-      
-      const itemTotal = effectivePrice * item.quantity;
+      const itemTotal = product.price * item.quantity;
       totalAmount += itemTotal;
 
       orderItems.push({
         product: product._id,
         quantity: item.quantity,
-        price: effectivePrice, // Store the actual price paid
-        originalPrice: product.price, // Store original price for reference
+        price: product.price,
         selectedSize: item.selectedSize || ''
       });
     }

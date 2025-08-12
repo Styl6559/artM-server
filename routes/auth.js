@@ -591,7 +591,7 @@ router.post('/logout', (req, res) => {
     res.clearCookie('authToken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'none' // Must match the original cookie setting
+      sameSite: 'none'
     });
     res.json({
       success: true,

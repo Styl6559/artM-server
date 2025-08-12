@@ -21,9 +21,6 @@ const orderSchema = new mongoose.Schema({
       type: Number,
       required: true
     },
-    originalPrice: {
-      type: Number
-    },
     selectedSize: {
       type: String,
       default: ''

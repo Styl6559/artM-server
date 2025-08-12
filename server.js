@@ -12,7 +12,6 @@ import adminRoutes from './routes/admin.js';
 import productRoutes from './routes/products.js';
 import contactRoutes from './routes/contact.js';
 import paymentRoutes from './routes/payment.js';
-import heroImagesRoutes from './routes/heroImages.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -28,20 +27,12 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:", "http:", "https://res.cloudinary.com"],
       scriptSrc: ["'self'", "https://accounts.google.com", "https://checkout.razorpay.com"],
       connectSrc: ["'self'", "https://accounts.google.com", "https://api.cloudinary.com", "https://api.razorpay.com"],
-      imgSrc: ["'self'", "data:", "https://res.cloudinary.com"],
-      frameSrc: ["'self'", "https://api.razorpay.com", "https://accounts.google.com"]
+      frameSrc: ["'self'", "https://api.razorpay.com"]
     }
-  },
-  hsts: {
-    maxAge: 31536000,
-    includeSubDomains: true,
-    preload: true
-  },
-  noSniff: true,
-  xssFilter: true,
-  referrerPolicy: { policy: "strict-origin-when-cross-origin" }
+  }
 }));
 
 // Rate limiting
@@ -109,6 +100,10 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Request logging middleware
 app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  if (req.method === 'POST' || req.method === 'PUT') {
+    console.log('Body keys:', Object.keys(req.body));
+  }
   next();
 });
 
@@ -133,7 +128,6 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/contact', contactLimiter, contactRoutes);
 app.use('/api/payment', paymentRoutes);
-app.use('/api/hero-images', heroImagesRoutes);
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.sendStatus(200);
@@ -158,7 +152,7 @@ app.use((error, req, res, next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Rangleela server running on port ${PORT}`);
+  console.log(`🚀 Artistic Manifestation server running on port ${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔑 Google OAuth: ${process.env.GOOGLE_CLIENT_ID ? 'Configured' : 'Not configured'}`);
   console.log(`☁️ Cloudinary: ${process.env.CLOUDINARY_CLOUD_NAME ? 'Configured' : 'Not configured'}`);

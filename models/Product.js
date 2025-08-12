@@ -15,17 +15,6 @@ const productSchema = new mongoose.Schema({
     required: true,
     min: 0
   },
-  discountPrice: {
-    type: Number,
-    min: 0,
-    validate: {
-      validator: function(value) {
-        // If discountPrice is provided, it must be less than the regular price
-        return !value || value < this.price;
-      },
-      message: 'Discount price must be less than regular price'
-    }
-  },
   image: {
     type: String,
     required: true
@@ -37,7 +26,12 @@ const productSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: ['painting', 'apparel', 'accessories']
+    enum: ['painting', 'apparel']
+  },
+  artist: {
+    type: String,
+    required: true,
+    trim: true
   },
   size: {
     type: String,
@@ -82,6 +76,7 @@ const productSchema = new mongoose.Schema({
 productSchema.index({ 
   name: 'text', 
   description: 'text', 
+  artist: 'text'
 });
 
 // Index for category and featured products
