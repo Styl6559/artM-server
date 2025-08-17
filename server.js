@@ -30,18 +30,10 @@ app.use(helmet({
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       scriptSrc: ["'self'", "https://accounts.google.com", "https://checkout.razorpay.com"],
       connectSrc: ["'self'", "https://accounts.google.com", "https://api.cloudinary.com", "https://api.razorpay.com"],
-      imgSrc: ["'self'", "data:", "https://res.cloudinary.com"],
+      imgSrc: ["'self'", "data:", "https:", "http:", "https://res.cloudinary.com"],
       frameSrc: ["'self'", "https://api.razorpay.com", "https://accounts.google.com"]
     }
   },
-  hsts: {
-    maxAge: 31536000,
-    includeSubDomains: true,
-    preload: true
-  },
-  noSniff: true,
-  xssFilter: true,
-  referrerPolicy: { policy: "strict-origin-when-cross-origin" }
 }));
 
 // Rate limiting
