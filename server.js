@@ -130,7 +130,9 @@ app.use('/api/hero-images', heroImagesRoutes);
 app.get('/api/health', (req, res) => {
   res.sendStatus(200);
 });
-
+app.get('/', (req, res) => {
+  res.send('Welcome to RangLeela API');
+});
 // 404 handler
 app.use('*', (req, res) => {
   console.log('404 - Route not found:', req.originalUrl);
