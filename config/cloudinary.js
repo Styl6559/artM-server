@@ -36,9 +36,6 @@ const storage = new CloudinaryStorage({
   params: {
     folder: 'rangleela',
     allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
-    transformation: [
-      { width: 800, height: 800, crop: 'limit', quality: 'auto' }
-    ],
     public_id: (req, file) => {
       // Generate unique filename
       const timestamp = Date.now();
@@ -47,6 +44,7 @@ const storage = new CloudinaryStorage({
     }
   }
 });
+
 
 export const upload = multer({ 
   storage: storage,
