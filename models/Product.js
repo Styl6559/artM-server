@@ -26,6 +26,7 @@ const productSchema = new mongoose.Schema({
       message: 'Discount price must be less than regular price'
     }
   },
+  // Primary image (required, for backward compatibility)
   image: {
     type: String,
     required: true
@@ -33,6 +34,32 @@ const productSchema = new mongoose.Schema({
   cloudinaryId: {
     type: String,
     required: true
+  },
+  // Additional images (up to 2 more, so total 3 images)
+  additionalImages: [{
+    url: {
+      type: String,
+      required: true
+    },
+    cloudinaryId: {
+      type: String,
+      required: true
+    }
+  }],
+  // Optional video
+  video: {
+    url: {
+      type: String
+    },
+    cloudinaryId: {
+      type: String
+    },
+    fileSize: {
+      type: Number
+    },
+    mimeType: {
+      type: String
+    }
   },
   category: {
     type: String,
@@ -76,6 +103,23 @@ const productSchema = new mongoose.Schema({
   }
 }, {
   timestamps: true
+});
+
+// Validation for additional images (max 2 additional images)
+productSchema.pre('save', function(next) {
+  if (this.additionalImages && this.additionalImages.length > 2) {
+    return next(new Error('Maximum 2 additional images allowed (total 3 images including primary)'));
+  }
+  next();
+});
+
+// Virtual property to get all images (primary + additional)
+productSchema.virtual('allImages').get(function() {
+  const images = [{ url: this.image, cloudinaryId: this.cloudinaryId }];
+  if (this.additionalImages) {
+    images.push(...this.additionalImages);
+  }
+  return images;
 });
 
 // Index for search functionality
