@@ -11,6 +11,12 @@ import { sendDeliveryEmail, sendContactReply } from '../email.js';
 
 const router = express.Router();
 
+// Custom upload handler for products (up to 3 images + 1 video)
+const productUpload = upload.fields([
+  { name: 'images', maxCount: 3 },
+  { name: 'video', maxCount: 1 }
+]);
+
 // Apply authentication and admin check to all routes
 router.use(authenticateToken);
 router.use(requireAdmin);
@@ -281,7 +287,7 @@ router.get('/products', async (req, res) => {
 
 // Create product with enhanced error handling
 router.post('/products', 
-  upload.single('image'),
+  productUpload,
   [
     body('name').trim().isLength({ min: 1, max: 100 }).withMessage('Name must be between 1-100 characters'),
     body('description').trim().isLength({ min: 1, max: 2000 }).withMessage('Description must be between 1-2000 characters'),
@@ -302,10 +308,11 @@ router.post('/products',
         });
       }
 
-      if (!req.file) {
+      // Check if at least one image is provided
+      if (!req.files || !req.files.images || req.files.images.length === 0) {
         return res.status(400).json({
           success: false,
-          message: 'Product image is required'
+          message: 'At least one product image is required'
         });
       }
 
@@ -319,6 +326,26 @@ router.post('/products',
         });
       }
 
+      // Process uploaded images
+      const images = req.files.images;
+      const primaryImage = images[0]; // First image is primary
+      const additionalImages = images.slice(1).map(img => ({
+        url: img.path,
+        cloudinaryId: img.filename
+      }));
+
+      // Process uploaded video (optional)
+      let videoData = null;
+      if (req.files.video && req.files.video.length > 0) {
+        const video = req.files.video[0];
+        videoData = {
+          url: video.path,
+          cloudinaryId: video.filename,
+          fileSize: video.size,
+          mimeType: video.mimetype
+        };
+      }
+
       const product = new Product({
         name,
         description,
@@ -327,8 +354,10 @@ router.post('/products',
         category,
         size: size || '',
         material: material || '',
-        image: req.file.path,
-        cloudinaryId: req.file.filename,
+        image: primaryImage.path,
+        cloudinaryId: primaryImage.filename,
+        additionalImages,
+        video: videoData,
         featured: featured === 'true',
         inStock: inStock !== 'false'
       });
@@ -348,12 +377,23 @@ router.post('/products',
     } catch (error) {
       console.error('Create product error:', error);
       
-      // Clean up uploaded image if product creation fails
-      if (req.file && req.file.filename) {
-        try {
-          await cloudinary.uploader.destroy(req.file.filename);
-        } catch (cleanupError) {
-          console.error('Failed to cleanup image:', cleanupError);
+      // Clean up uploaded files if product creation fails
+      if (req.files) {
+        if (req.files.images) {
+          for (const img of req.files.images) {
+            try {
+              await cloudinary.uploader.destroy(img.filename);
+            } catch (cleanupError) {
+              console.error('Failed to cleanup image:', cleanupError);
+            }
+          }
+        }
+        if (req.files.video && req.files.video[0]) {
+          try {
+            await cloudinary.uploader.destroy(req.files.video[0].filename);
+          } catch (cleanupError) {
+            console.error('Failed to cleanup video:', cleanupError);
+          }
         }
       }
       
@@ -367,7 +407,7 @@ router.post('/products',
 
 // Update product
 router.put('/products/:id',
-  upload.single('image'),
+  productUpload,
   async (req, res) => {
     try {      
       const { id } = req.params;
@@ -399,15 +439,54 @@ router.put('/products/:id',
         updateData.discountPrice = parseFloat(updateData.discountPrice);
       }
 
-      if (req.file) {
-        // Delete old image from Cloudinary
+      // Handle new file uploads
+      if (req.files && (req.files.images || req.files.video)) {
         const product = await Product.findById(id);
-        if (product && product.cloudinaryId) {
-          await cloudinary.uploader.destroy(product.cloudinaryId);
+        
+        // Handle new images
+        if (req.files.images && req.files.images.length > 0) {
+          // Delete old images from Cloudinary
+          if (product) {
+            // Delete primary image
+            if (product.cloudinaryId) {
+              await cloudinary.uploader.destroy(product.cloudinaryId);
+            }
+            // Delete additional images
+            if (product.additionalImages) {
+              for (const img of product.additionalImages) {
+                await cloudinary.uploader.destroy(img.cloudinaryId);
+              }
+            }
+          }
+          
+          // Process new images
+          const images = req.files.images;
+          const primaryImage = images[0];
+          const additionalImages = images.slice(1).map(img => ({
+            url: img.path,
+            cloudinaryId: img.filename
+          }));
+          
+          updateData.image = primaryImage.path;
+          updateData.cloudinaryId = primaryImage.filename;
+          updateData.additionalImages = additionalImages;
         }
         
-        updateData.image = req.file.path;
-        updateData.cloudinaryId = req.file.filename;
+        // Handle new video
+        if (req.files.video && req.files.video.length > 0) {
+          // Delete old video from Cloudinary
+          if (product && product.video && product.video.cloudinaryId) {
+            await cloudinary.uploader.destroy(product.video.cloudinaryId);
+          }
+          
+          const video = req.files.video[0];
+          updateData.video = {
+            url: video.path,
+            cloudinaryId: video.filename,
+            fileSize: video.size,
+            mimeType: video.mimetype
+          };
+        }
       }
 
       updateData.updatedAt = new Date();
@@ -455,9 +534,21 @@ router.delete('/products/:id', async (req, res) => {
       });
     }
 
-    // Delete image from Cloudinary
+    // Delete all media files from Cloudinary
     if (product.cloudinaryId) {
       await cloudinary.uploader.destroy(product.cloudinaryId);
+    }
+
+    // Delete additional images
+    if (product.additionalImages) {
+      for (const img of product.additionalImages) {
+        await cloudinary.uploader.destroy(img.cloudinaryId);
+      }
+    }
+
+    // Delete video if exists
+    if (product.video && product.video.cloudinaryId) {
+      await cloudinary.uploader.destroy(product.video.cloudinaryId);
     }
 
     await Product.findByIdAndDelete(id);
