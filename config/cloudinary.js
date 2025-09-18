@@ -35,12 +35,14 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'rangleela',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'mp4', 'mov', 'avi'],
+    resource_type: 'auto', // Automatically detect if it's image or video
     public_id: (req, file) => {
       // Generate unique filename
       const timestamp = Date.now();
       const random = Math.random().toString(36).substring(2);
-      return `product_${timestamp}_${random}`;
+      const type = file.mimetype.startsWith('video/') ? 'video' : 'image';
+      return `${type}_${timestamp}_${random}`;
     }
   }
 });
@@ -49,8 +51,8 @@ const storage = new CloudinaryStorage({
 export const upload = multer({ 
   storage: storage,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
-    files: 3 // Allow maximum 3 files per upload
+    fileSize: 50 * 1024 * 1024, // 50MB limit to accommodate videos
+    files: 4 // Allow maximum 4 files (3 images + 1 video)
   },
   fileFilter: (req, file, cb) => {
     console.log('File upload attempt:', {
@@ -60,25 +62,35 @@ export const upload = multer({
       size: file.size
     });
     
-    // Allowed MIME types and extensions
-    const allowedMimes = [
+    // Allowed MIME types for images and videos
+    const allowedImageMimes = [
       'image/jpeg',
       'image/jpg', 
       'image/png',
       'image/webp'
     ];
     
-    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
+    const allowedVideoMimes = [
+      'video/mp4',
+      'video/mpeg',
+      'video/quicktime', // .mov
+      'video/x-msvideo'  // .avi
+    ];
+    
+    const allowedMimes = [...allowedImageMimes, ...allowedVideoMimes];
+    const allowedImageExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
+    const allowedVideoExtensions = ['.mp4', '.mov', '.avi'];
+    const allowedExtensions = [...allowedImageExtensions, ...allowedVideoExtensions];
     
     // Check MIME type
     if (!allowedMimes.includes(file.mimetype)) {
-      return cb(new Error('Invalid file type. Only JPEG, PNG, and WebP images are allowed.'), false);
+      return cb(new Error('Invalid file type. Only JPEG, PNG, WebP images and MP4, MOV, AVI videos are allowed.'), false);
     }
     
     // Check file extension
     const fileExtension = file.originalname.toLowerCase().slice(file.originalname.lastIndexOf('.'));
     if (!allowedExtensions.includes(fileExtension)) {
-      return cb(new Error('Invalid file extension. Only .jpg, .jpeg, .png, and .webp files are allowed.'), false);
+      return cb(new Error('Invalid file extension. Only image and video files are allowed.'), false);
     }
     
     // Check for suspicious file names
@@ -93,9 +105,13 @@ export const upload = multer({
       }
     }
     
-    // Check file size (additional check)
-    if (file.size && file.size > 10 * 1024 * 1024) {
-      return cb(new Error('File too large. Maximum size is 10MB.'), false);
+    // Check file size based on type (different limits for images vs videos)
+    const isVideo = allowedVideoMimes.includes(file.mimetype);
+    const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024; // 50MB for videos, 10MB for images
+    
+    if (file.size && file.size > maxSize) {
+      const maxSizeLabel = isVideo ? '50MB' : '10MB';
+      return cb(new Error(`File too large. Maximum size is ${maxSizeLabel}.`), false);
     }
     
     cb(null, true);
