@@ -23,23 +23,25 @@ app.set('trust proxy', 1);
 // Security middleware
 app.use(helmet({
   crossOriginEmbedderPolicy: false,
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      scriptSrc: ["'self'", "https://accounts.google.com", "https://checkout.razorpay.com"],
-      connectSrc: ["'self'", "https://accounts.google.com", "https://api.cloudinary.com", "https://api.razorpay.com"],
-      imgSrc: ["'self'", "data:", "https:", "http:", "https://res.cloudinary.com"],
-      frameSrc: ["'self'", "https://api.razorpay.com", "https://accounts.google.com"]
-    }
-  },
+  contentSecurityPolicy: process.env.NODE_ENV === 'production'
+    ? {
+        directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+          fontSrc: ["'self'", "https://fonts.gstatic.com"],
+          scriptSrc: ["'self'", "https://accounts.google.com", "https://checkout.razorpay.com"],
+          connectSrc: ["'self'", "https://accounts.google.com", "https://api.cloudinary.com", "https://api.razorpay.com"],
+          imgSrc: ["'self'", "data:", "https:", "http:", "https://res.cloudinary.com"],
+          frameSrc: ["'self'", "https://api.razorpay.com", "https://accounts.google.com"]
+        }
+      }
+    : false
 }));
 
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 5 * 60 * 1000,
-  max: process.env.NODE_ENV === 'production' ? 120 : 10000, // More lenient in development
+  max: process.env.NODE_ENV === 'production' ? 120 : 10000,
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again later.'
@@ -48,17 +50,19 @@ const limiter = rateLimit({
   legacyHeaders: false
 });
 
-app.use(limiter);
+// FIX: limit only API, not health/root
+app.use('/api', limiter);
 
 // Stricter rate limiting for auth routes
 const authLimiter = rateLimit({
   windowMs: 5 * 60 * 1000,
-  max: process.env.NODE_ENV === 'production' ? 10 : 1000, // More lenient in development
+  max: process.env.NODE_ENV === 'production' ? 10 : 1000,
   message: {
     success: false,
     message: 'Too many authentication attempts, please try again later.'
   }
 });
+
 const contactLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 3,
@@ -67,16 +71,26 @@ const contactLimiter = rateLimit({
     message: 'Too many contact messages from this IP, please try again later.'
   }
 });
-// CORS configuration
+
+// CORS configuration (FIXED, but structure kept)
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    
+
     const allowedOrigins = [
-      process.env.FRONTEND_URL,process.env.FRONTEND_URL2,process.env.FRONTEND_URL3
-    ];
-    
+      process.env.FRONTEND_URL,
+      process.env.FRONTEND_URL2,
+      process.env.FRONTEND_URL3
+    ].filter(Boolean); // FIX
+
+    // FIX: allow localhost in dev
+    if (
+      process.env.NODE_ENV !== 'production' &&
+      (origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1'))
+    ) {
+      return callback(null, true);
+    }
+
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
@@ -99,7 +113,7 @@ app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Request logging middleware
+// Request logging middleware (kept as-is)
 app.use((req, res, next) => {
   next();
 });
@@ -117,7 +131,21 @@ const connectDB = async () => {
   }
 };
 
-connectDB();
+// FIX: start server only after DB
+const startServer = async () => {
+  await connectDB();
+
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Rangleela server running on port ${PORT}`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🔑 Google OAuth: ${process.env.GOOGLE_CLIENT_ID ? 'Configured' : 'Not configured'}`);
+    console.log(`☁️ Cloudinary: ${process.env.CLOUDINARY_CLOUD_NAME ? 'Configured' : 'Not configured'}`);
+    console.log(`💳 Razorpay: ${process.env.RAZORPAY_KEY_ID ? 'Configured' : 'Not configured'}`);
+    console.log(`🗄️ MongoDB: ${process.env.MONGODB_URI ? 'Custom URI' : 'Default local'}`);
+  });
+};
+
+startServer();
 
 // Routes
 app.use('/api/auth', authLimiter, authRoutes);
@@ -126,13 +154,16 @@ app.use('/api/products', productRoutes);
 app.use('/api/contact', contactLimiter, contactRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/hero-images', heroImagesRoutes);
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.sendStatus(200);
 });
+
 app.get('/', (req, res) => {
   res.send('Welcome to RangLeela API');
 });
+
 // 404 handler
 app.use('*', (req, res) => {
   console.log('404 - Route not found:', req.originalUrl);
@@ -151,14 +182,15 @@ app.use((error, req, res, next) => {
   });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Rangleela server running on port ${PORT}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔑 Google OAuth: ${process.env.GOOGLE_CLIENT_ID ? 'Configured' : 'Not configured'}`);
-  console.log(`☁️ Cloudinary: ${process.env.CLOUDINARY_CLOUD_NAME ? 'Configured' : 'Not configured'}`);
-  console.log(`💳 Razorpay: ${process.env.RAZORPAY_KEY_ID ? 'Configured' : 'Not configured'}`);
-  console.log(`🗄️ MongoDB: ${process.env.MONGODB_URI ? 'Custom URI' : 'Default local'}`);
+
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received');
+  await mongoose.disconnect();
+  process.exit(0);
 });
 
-export const ADMIN_EMAILS = process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(',').map(email => email.trim()) : [];
+export const ADMIN_EMAILS = process.env.ADMIN_EMAILS
+  ? process.env.ADMIN_EMAILS.split(',').map(email => email.trim())
+  : [];
+
 export default app;
